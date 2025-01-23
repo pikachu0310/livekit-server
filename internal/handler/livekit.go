@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/auth"
-	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pikachu0310/livekit-server/openapi/models"
 	"gopkg.in/square/go-jose.v2/jwt"
 )
@@ -30,58 +27,10 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsif3xPZ/ObY12BCB2SfC3045eSkq
 G9Kw2nD2DYgoJHFCPTzCLUqOKDpig4H0tYXH4RaSy6+apfgfeE/TJagHuw==
 -----END PUBLIC KEY-----`
 
-// GetRooms: GET /rooms
-// 全ルームを取得し、それぞれの参加者一覧をまとめて返す。
-func (h *Handler) GetRooms(ctx echo.Context) error {
-	// 1) LiveKit RoomService クライアントを生成
-	rsClient := lksdk.NewRoomServiceClient(h.LiveKitHost, h.ApiKey, h.ApiSecret)
-
-	// 2) ルーム一覧を取得
-	roomResp, err := rsClient.ListRooms(context.Background(), &livekit.ListRoomsRequest{})
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("failed to list rooms: %v", err),
-		})
-	}
-
-	// 3) 各ルームの参加者を取得し、まとめる
-	type RoomInfo struct {
-		RoomName     string   `json:"roomName"`
-		Participants []string `json:"participants"`
-	}
-	var result []RoomInfo
-
-	for _, rm := range roomResp.Rooms {
-		// ルーム毎に参加者一覧を取得
-		partResp, err := rsClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
-			Room: rm.Name,
-		})
-		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("failed to list participants in room %s: %v", rm.Name, err),
-			})
-		}
-
-		// identityのリストだけ抽出
-		var identities []string
-		for _, p := range partResp.Participants {
-			identities = append(identities, p.Identity)
-		}
-
-		result = append(result, RoomInfo{
-			RoomName:     rm.Name,
-			Participants: identities,
-		})
-	}
-
-	// 4) JSONで返却
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetLiveKitToken: GET /token?room=UUID
+// GetLiveKitToken GET /token?room=UUID
 // Bearerトークン(ES256)で認証後、LiveKit接続用JWTを生成して返す。
 // さらに canUpdateOwnMetadata を付与するため、UpdateParticipant を呼ぶ。
-func (h *Handler) GetLiveKitToken(c echo.Context, params models.GetLiveKitTokenParams) error {
+func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams) error {
 	// 1) roomクエリパラメータ取得 (必須)
 	room := c.QueryParam("room")
 	if room == "" {
@@ -175,12 +124,6 @@ func (h *Handler) GetLiveKitToken(c echo.Context, params models.GetLiveKitTokenP
 	return c.JSON(http.StatusOK, map[string]string{
 		"token": livekitToken,
 	})
-}
-
-// Test: 未使用のサンプルハンドラ
-func (h *Handler) Test(ctx echo.Context) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 // verifyWithECDSA は ECDSA 公開鍵2種類(本番鍵 / 開発用鍵)で検証を試みるユーティリティ
