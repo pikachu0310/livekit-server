@@ -6,11 +6,6 @@ info:
   contact:
     name: livekit-server
     url: 'https://github.com/pikachu0310/livekit-server'
-servers:
-  - url: 'http://localhost:8080/api'
-    description: ローカル環境
-  - url: 'https://4447-dev.traq-preview.trapti.tech'
-    description: 開発環境
 tags:
   - name: livekit
     description: LiveKitAPI
