@@ -50,7 +50,8 @@ func main() {
 	repo := repository.New(db)
 
 	// setup routes
-	h := handler.New(repo)
+	cfg := config.LoadLivekitConfig()
+	h := handler.New(repo, cfg)
 	openapi.RegisterHandlersWithBaseURL(e, h, baseURL)
 
 	e.Logger.Fatal(e.Start(config.AppAddr()))
