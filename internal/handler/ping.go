@@ -6,6 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) Ping(c echo.Context) error {
+func (h *Handler) PingServer(c echo.Context) error {
 	return c.String(http.StatusOK, "pong")
 }

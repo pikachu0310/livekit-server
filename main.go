@@ -6,11 +6,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	oapimiddleware "github.com/oapi-codegen/echo-middleware"
-	"github.com/pikachu0310/go-backend-template/internal/handler"
-	"github.com/pikachu0310/go-backend-template/internal/migration"
-	"github.com/pikachu0310/go-backend-template/internal/pkg/config"
-	"github.com/pikachu0310/go-backend-template/internal/repository"
-	"github.com/pikachu0310/go-backend-template/openapi"
+	"github.com/pikachu0310/livekit-server/internal/handler"
+	"github.com/pikachu0310/livekit-server/internal/migration"
+	"github.com/pikachu0310/livekit-server/internal/pkg/config"
+	"github.com/pikachu0310/livekit-server/internal/repository"
+	"github.com/pikachu0310/livekit-server/openapi"
+	"net/http"
 )
 
 func main() {
@@ -27,6 +28,10 @@ func main() {
 	// middlewares
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"http://localhost:8080", "https://*.traq-preview.trapti.tech"},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+	}))
 	e.Use(oapimiddleware.OapiRequestValidator(swagger))
 
 	// connect to database
