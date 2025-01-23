@@ -29,3 +29,9 @@ type GetLiveKitTokenParams struct {
 	// Room 参加するルームのUUID
 	Room openapi_types.UUID `form:"room" json:"room"`
 }
+
+// LiveKitWebhookJSONBody defines parameters for LiveKitWebhook.
+type LiveKitWebhookJSONBody = map[string]interface{}
+
+// LiveKitWebhookJSONRequestBody defines body for LiveKitWebhook for application/json ContentType.
+type LiveKitWebhookJSONRequestBody = LiveKitWebhookJSONBody

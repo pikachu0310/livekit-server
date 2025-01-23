@@ -23,6 +23,7 @@ paths:
               schema:
                 type: string
                 example: pong
+
   /test:
     get:
       summary: テスト用
@@ -30,6 +31,7 @@ paths:
       responses:
         '200':
           description: OK
+
   /token:
     get:
       summary: LiveKitトークンを取得
@@ -66,6 +68,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal Server Error
+
   /rooms:
     get:
       summary: ルームと参加者の一覧を取得
@@ -87,6 +90,46 @@ paths:
           description: Not Found
         '500':
           description: Internal Server Error
+
+  /webhook:
+    post:
+      summary: LiveKit Webhook受信
+      description: >
+        LiveKit側で設定したWebhookから呼び出されるエンドポイントです。
+        参加者の入室・退出などのイベントを受け取り、サーバ内で処理を行います。
+      operationId: liveKitWebhook
+      tags:
+        - livekit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: LiveKit Webhook イベントのペイロード
+      responses:
+        '200':
+          description: Webhookを正常に受信
+        '400':
+          description: Invalid payload
+        '500':
+          description: Internal Server Error
+
+  /ws:
+    get:
+      summary: WebSocketエンドポイント
+      description: >
+        WebSocketを通じてルームの参加者一覧などをリアルタイムに受け取るためのエンドポイントです。
+        入室/退出などのイベントが発生した際に、全ルームの最新状態が送信されます。
+      operationId: getWs
+      tags:
+        - livekit
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket通信開始)
+        '500':
+          description: Internal Server Error
+
 components:
   parameters:
     gameIdInPath:
