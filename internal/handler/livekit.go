@@ -6,6 +6,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"net/http"
 	"os"
 	"time"
@@ -79,18 +81,7 @@ func (h *Handler) GetRooms(ctx echo.Context) error {
 // GetLiveKitToken: GET /token?room=UUID
 // Bearerトークン(ES256)で認証後、LiveKit接続用JWTを生成して返す。
 // さらに canUpdateOwnMetadata を付与するため、UpdateParticipant を呼ぶ。
-func (h *Handler) GetLiveKitToken(ctx echo.Context, params models.GetLiveKitTokenParams) error {
-	return h.generateToken(ctx)
-}
-
-// Test: 未使用のサンプルハンドラ
-func (h *Handler) Test(ctx echo.Context) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-// generateToken はトークン生成ロジック
-func (h *Handler) generateToken(c echo.Context) error {
+func (h *Handler) GetLiveKitToken(c echo.Context, params models.GetLiveKitTokenParams) error {
 	// 1) roomクエリパラメータ取得 (必須)
 	room := c.QueryParam("room")
 	if room == "" {
@@ -160,14 +151,16 @@ func (h *Handler) generateToken(c echo.Context) error {
 
 	// 7) VideoGrant にルーム名、CanPublishData=true を設定
 	at := auth.NewAccessToken(apiKey, apiSecret)
-	CanPublishData := true
 	grant := &auth.VideoGrant{
-		RoomJoin:       true,
-		Room:           room,
-		CanPublishData: &CanPublishData,
+		RoomJoin:             true,
+		Room:                 room,
+		CanPublishData:       util.BoolPtr(true),
+		CanUpdateOwnMetadata: util.BoolPtr(true),
 	}
+	randomUUID := uuid.New().String()
+	userIdentity := fmt.Sprintf("%s_%s", userID, randomUUID)
 	at.SetVideoGrant(grant).
-		SetIdentity(userID).
+		SetIdentity(userIdentity).
 		SetName(userID).
 		SetValidFor(24 * time.Hour)
 
@@ -178,29 +171,16 @@ func (h *Handler) generateToken(c echo.Context) error {
 		})
 	}
 
-	// 8) さらに canUpdateOwnMetadata を付与
-	//    -> ParticipantPermissionを更新
-	rsClient := lksdk.NewRoomServiceClient(h.LiveKitHost, apiKey, apiSecret)
-	updateReq := &livekit.UpdateParticipantRequest{
-		Room:     room,
-		Identity: userID,
-		Permission: &livekit.ParticipantPermission{
-			CanSubscribe:      true,
-			CanPublish:        true,
-			CanPublishData:    true,
-			CanUpdateMetadata: true,
-		},
-	}
-	if _, err := rsClient.UpdateParticipant(context.Background(), updateReq); err != nil {
-		// 参加前だとエラーになる場合もあるが、要件次第で無視してもOK
-		fmt.Printf("[WARN] UpdateParticipant failed: %v\n", err)
-		// ここでは続行して token は返却する
-	}
-
 	// 9) 最終的にトークンをJSONで返す
 	return c.JSON(http.StatusOK, map[string]string{
 		"token": livekitToken,
 	})
+}
+
+// Test: 未使用のサンプルハンドラ
+func (h *Handler) Test(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
 }
 
 // verifyWithECDSA は ECDSA 公開鍵2種類(本番鍵 / 開発用鍵)で検証を試みるユーティリティ
