@@ -1,36 +1,37 @@
 package handler
 
 import (
-	"encoding/json"
+	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/livekit/protocol/livekit"
+	"github.com/livekit/protocol/auth"
 	"github.com/livekit/protocol/webhook"
 	"net/http"
 )
 
 // LiveKitWebhook POST /webhook
 func (h *Handler) LiveKitWebhook(c echo.Context) error {
-	// Content-Type が application/webhook+json であることを許容
-	if c.Request().Header.Get("Content-Type") != "application/webhook+json" {
-		return c.JSON(http.StatusUnsupportedMediaType, map[string]string{
-			"error": "Unsupported Content-Type",
-		})
-	}
+	// Authプロバイダーを初期化
+	authProvider := auth.NewSimpleKeyProvider(h.repo.ApiKey, h.repo.ApiSecret)
 
-	// リクエストボディをパース
-	var event livekit.WebhookEvent
-	if err := json.NewDecoder(c.Request().Body).Decode(&event); err != nil {
+	// Webhookイベントを受け取る
+	event, err := webhook.ReceiveWebhookEvent(c.Request(), authProvider)
+	if err != nil {
+		fmt.Printf("Failed to validate webhook: %v", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid Webhook payload",
+			"error": "Failed to validate webhook",
 		})
 	}
 
 	// ルーム状態を更新
 	switch event.Event {
 	case webhook.EventParticipantJoined:
+		fmt.Printf("Participant joined: room=%s, participant=%s", event.Room.Name, event.Participant.Identity)
 		h.repo.AddParticipantToRoomState(event.Room, event.Participant)
 	case webhook.EventParticipantLeft:
+		fmt.Printf("Participant left: room=%s, participant=%s", event.Room.Name, event.Participant.Identity)
 		h.repo.RemoveParticipant(event.Room.Name, event.Participant.Identity)
+	default:
+		fmt.Printf("Unhandled webhook event: %s", event.Event)
 	}
 
 	// 全ルームの状態をWebSocketでブロードキャスト
