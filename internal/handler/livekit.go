@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -29,7 +28,6 @@ G9Kw2nD2DYgoJHFCPTzCLUqOKDpig4H0tYXH4RaSy6+apfgfeE/TJagHuw==
 
 // GetLiveKitToken GET /token?room=UUID
 // Bearerトークン(ES256)で認証後、LiveKit接続用JWTを生成して返す。
-// さらに canUpdateOwnMetadata を付与するため、UpdateParticipant を呼ぶ。
 func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams) error {
 	// 1) roomクエリパラメータ取得 (必須)
 	room := c.QueryParam("room")
@@ -89,9 +87,9 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 	}
 	userID := name
 
-	// 6) LiveKit用APIキー/シークレット (環境変数より)
-	apiKey := os.Getenv("LIVEKIT_API_KEY")
-	apiSecret := os.Getenv("LIVEKIT_API_SECRET")
+	// 6) LiveKit用APIキー/シークレット
+	apiKey := h.repo.ApiKey
+	apiSecret := h.repo.ApiSecret
 	if apiKey == "" || apiSecret == "" {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "API key and secret must be set in environment variables",

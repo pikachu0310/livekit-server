@@ -2,28 +2,19 @@ package handler
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/pikachu0310/livekit-server/internal/pkg/config"
 	"github.com/pikachu0310/livekit-server/internal/repository"
 	"sync"
 )
 
 type Handler struct {
-	repo        *repository.Repository
-	LiveKitHost string
-	ApiKey      string
-	ApiSecret   string
-	Clients     map[*websocket.Conn]bool
-	Mutex       sync.Mutex
-	RoomState   map[string][]string
+	repo    *repository.Repository
+	Clients map[*websocket.Conn]bool
+	Mutex   sync.Mutex
 }
 
-func New(repo *repository.Repository, cfg *config.LivekitConfig) *Handler {
+func New(repo *repository.Repository) *Handler {
 	return &Handler{
-		repo:        repo,
-		LiveKitHost: cfg.LiveKitHost,
-		ApiKey:      cfg.ApiKey,
-		ApiSecret:   cfg.ApiSecret,
-		Clients:     make(map[*websocket.Conn]bool),
-		RoomState:   make(map[string][]string),
+		repo:    repo,
+		Clients: make(map[*websocket.Conn]bool),
 	}
 }

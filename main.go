@@ -45,15 +45,14 @@ func main() {
 	//}
 
 	// setup repository
-	repo := repository.New(nil)
-
-	// setup routes
 	cfg := config.LoadLivekitConfig()
-	h := handler.New(repo, cfg)
-	if err = h.InitializeRoomState(); err != nil {
+	repo := repository.New(nil, cfg)
+	if err = repo.InitializeRoomState(); err != nil {
 		e.Logger.Fatal("Failed to initialize room state: %v", err)
 	}
 
+	// setup routes
+	h := handler.New(repo)
 	openapi.RegisterHandlersWithBaseURL(e, h, baseURL)
 
 	e.Logger.Fatal(e.Start(config.AppAddr()))
