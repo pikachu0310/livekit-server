@@ -10,6 +10,14 @@ import (
 
 // LiveKitWebhook POST /webhook
 func (h *Handler) LiveKitWebhook(c echo.Context) error {
+	// Content-Type が application/webhook+json であることを許容
+	if c.Request().Header.Get("Content-Type") != "application/webhook+json" {
+		return c.JSON(http.StatusUnsupportedMediaType, map[string]string{
+			"error": "Unsupported Content-Type",
+		})
+	}
+
+	// リクエストボディをパース
 	var event livekit.WebhookEvent
 	if err := json.NewDecoder(c.Request().Body).Decode(&event); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{

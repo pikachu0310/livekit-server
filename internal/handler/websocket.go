@@ -8,38 +8,6 @@ import (
 	"net/http"
 )
 
-// 現在のルーム状態をWebSocketでブロードキャスト
-func (h *Handler) broadcastRoomState() {
-	h.Mutex.Lock()
-	defer h.Mutex.Unlock()
-
-	// RoomStateをRoomWithParticipantsの形式に変換
-	rooms := h.repo.RoomState
-
-	// 全ルームの状態をJSONにシリアライズ
-	roomStateJSON, err := json.Marshal(rooms)
-	if err != nil {
-		fmt.Printf("Failed to marshal room state: %v", err)
-		return
-	}
-
-	// 全クライアントに送信
-	for client := range h.Clients {
-		if err := client.WriteMessage(websocket.TextMessage, roomStateJSON); err != nil {
-			fmt.Printf("Failed to send message to WebSocket client: %v", err)
-			client.Close()
-			delete(h.Clients, client)
-		}
-	}
-}
-
-// WebSocket用のアップグレーダ
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // 全リクエスト許可 (必要に応じて制限)
-	},
-}
-
 // GetWs WebSocketエンドポイント: GET /ws
 func (h *Handler) GetWs(c echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -70,4 +38,36 @@ func (h *Handler) GetWs(c echo.Context) error {
 		}
 	}
 	return nil
+}
+
+// 現在のルーム状態をWebSocketでブロードキャスト
+func (h *Handler) broadcastRoomState() {
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
+
+	// RoomStateをRoomWithParticipantsの形式に変換
+	rooms := h.repo.RoomState
+
+	// 全ルームの状態をJSONにシリアライズ
+	roomStateJSON, err := json.Marshal(rooms)
+	if err != nil {
+		fmt.Printf("Failed to marshal room state: %v", err)
+		return
+	}
+
+	// 全クライアントに送信
+	for client := range h.Clients {
+		if err := client.WriteMessage(websocket.TextMessage, roomStateJSON); err != nil {
+			fmt.Printf("Failed to send message to WebSocket client: %v", err)
+			client.Close()
+			delete(h.Clients, client)
+		}
+	}
+}
+
+// WebSocket用のアップグレーダ
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // 全リクエスト許可 (必要に応じて制限)
+	},
 }
