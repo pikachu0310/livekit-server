@@ -120,7 +120,8 @@ paths:
       summary: WebSocketエンドポイント
       description: >
         WebSocketを通じてルームの参加者一覧などをリアルタイムに受け取るためのエンドポイントです。
-        入室/退出などのイベントが発生した際に、全ルームの最新状態が送信されます。
+        Livekit側から誰かが入室/退出したイベントを受け取った時に、
+        全ての部屋の情報 (RoomWithParticipants) を返します。
       operationId: getWs
       tags:
         - livekit
@@ -160,3 +161,8 @@ components:
           type: string
           format: date-time
           description: 参加した時刻
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+          description: ユーザーに関連付けられたカスタム属性

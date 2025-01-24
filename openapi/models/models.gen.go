@@ -11,6 +11,9 @@ import (
 
 // Participant ルーム内の参加者一覧
 type Participant struct {
+	// Attributes ユーザーに関連付けられたカスタム属性
+	Attributes *map[string]string `json:"attributes,omitempty"`
+
 	// Identity ユーザーID_RandomUUID
 	Identity *string `json:"identity,omitempty"`
 
