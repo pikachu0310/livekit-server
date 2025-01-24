@@ -131,38 +131,6 @@ paths:
           description: Internal Server Error
 
 components:
-  parameters:
-    gameIdInPath:
-      in: path
-      name: gameId
-      required: true
-      schema:
-        type: string
-        format: uuid
-        description: ゲームID
-    termIdInPath:
-      in: path
-      name: termId
-      required: true
-      schema:
-        type: string
-        format: uuid
-        description: タームID
-    eventSlugInPath:
-      in: path
-      name: eventSlug
-      required: true
-      schema:
-        type: string
-        description: イベントSlug
-    userIdInPath:
-      in: path
-      name: userId
-      required: true
-      schema:
-        type: string
-        description: ユーザーID
-
   schemas:
     RoomWithParticipants:
       type: object
@@ -173,17 +141,22 @@ components:
           description: ルームのID
         participants:
           type: array
-          description: ルーム内の参加者一覧
           items:
-            type: object
-            properties:
-              identity:
-                type: string
-                description: ユーザーIDや名前など
-              joinedAt:
-                type: string
-                format: date-time
-                description: 参加した時刻
+            $ref: '#/components/schemas/Participant'
       required:
         - roomId
         - participants
+    Participant:
+      description: ルーム内の参加者一覧
+      type: object
+      properties:
+        identity:
+          type: string
+          description: ユーザーID_RandomUUID
+        name:
+          type: string
+          description: 表示名
+        joinedAt:
+          type: string
+          format: date-time
+          description: 参加した時刻

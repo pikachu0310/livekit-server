@@ -9,16 +9,21 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Participant ルーム内の参加者一覧
+type Participant struct {
+	// Identity ユーザーID_RandomUUID
+	Identity *string `json:"identity,omitempty"`
+
+	// JoinedAt 参加した時刻
+	JoinedAt *time.Time `json:"joinedAt,omitempty"`
+
+	// Name 表示名
+	Name *string `json:"name,omitempty"`
+}
+
 // RoomWithParticipants defines model for RoomWithParticipants.
 type RoomWithParticipants struct {
-	// Participants ルーム内の参加者一覧
-	Participants []struct {
-		// Identity ユーザーIDや名前など
-		Identity *string `json:"identity,omitempty"`
-
-		// JoinedAt 参加した時刻
-		JoinedAt *time.Time `json:"joinedAt,omitempty"`
-	} `json:"participants"`
+	Participants []Participant `json:"participants"`
 
 	// RoomId ルームのID
 	RoomId openapi_types.UUID `json:"roomId"`
