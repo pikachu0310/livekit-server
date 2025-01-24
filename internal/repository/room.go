@@ -30,6 +30,24 @@ func (r *Repository) AddParticipantToRoomState(room *livekit.Room, participant *
 	}
 }
 
+func (r *Repository) UpdateParticipant(roomId string, participant *livekit.ParticipantInfo) {
+	for i, roomState := range r.RoomState {
+		if roomState.RoomId.String() == roomId {
+			for j, p := range roomState.Participants {
+				if *p.Identity == participant.Identity {
+					t := time.Unix(participant.JoinedAt, 0).In(time.FixedZone("Asia/Tokyo", 9*60*60))
+					r.RoomState[i].Participants[j] = models.Participant{
+						Identity:   &participant.Identity,
+						JoinedAt:   &t,
+						Name:       &participant.Name,
+						Attributes: &participant.Attributes,
+					}
+				}
+			}
+		}
+	}
+}
+
 func (r *Repository) RemoveParticipant(roomId string, participantId string) {
 	for i, roomState := range r.RoomState {
 		if roomState.RoomId.String() == roomId {
@@ -40,6 +58,15 @@ func (r *Repository) RemoveParticipant(roomId string, participantId string) {
 			}
 		}
 	}
+}
+
+func (r *Repository) GetRoomsWithParticipantsByLiveKitServerAndSave(ctx context.Context) error {
+	roomWithParticipants, err := r.GetRoomsWithParticipantsByLiveKitServer(ctx)
+	if err != nil {
+		return err
+	}
+	r.RoomState = roomWithParticipants
+	return nil
 }
 
 func (r *Repository) AddRoomState(room models.RoomWithParticipants) {
