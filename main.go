@@ -4,7 +4,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	oapimiddleware "github.com/oapi-codegen/echo-middleware"
 	"github.com/pikachu0310/livekit-server/internal/handler"
 	"github.com/pikachu0310/livekit-server/internal/pkg/config"
 	"github.com/pikachu0310/livekit-server/internal/repository"
@@ -27,10 +26,10 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:8080", "https://*.traq-preview.trapti.tech"},
+		AllowOrigins: []string{"http://localhost:8080", "https://*.traq-preview.trapti.tech", "https://*.livekit.trap.show"},
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
 	}))
-	e.Use(oapimiddleware.OapiRequestValidator(swagger))
+	//e.Use(oapimiddleware.OapiRequestValidator(swagger))
 
 	// connect to database
 	//db, err := sqlx.Connect("mysql", config.MySQL().FormatDSN())
