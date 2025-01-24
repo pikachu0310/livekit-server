@@ -22,6 +22,14 @@ func (h *Handler) GetWs(c echo.Context) error {
 	h.Clients[conn] = true
 	h.Mutex.Unlock()
 
+	// 現在のルーム状態を送信
+	err = h.broadcastRoomStateToSingleClient(conn)
+	if err != nil {
+		fmt.Printf("Failed to send room state to WebSocket client: %v", err)
+		delete(h.Clients, conn)
+		return err
+	}
+
 	// WebSocket切断時にクライアントを削除
 	defer func() {
 		h.Mutex.Lock()
@@ -63,6 +71,29 @@ func (h *Handler) broadcastRoomState() {
 			delete(h.Clients, client)
 		}
 	}
+}
+
+func (h *Handler) broadcastRoomStateToSingleClient(client *websocket.Conn) error {
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
+
+	// RoomStateをRoomWithParticipantsの形式に変換
+	rooms := h.repo.RoomState
+
+	// 全ルームの状態をJSONにシリアライズ
+	roomStateJSON, err := json.Marshal(rooms)
+	if err != nil {
+		fmt.Printf("Failed to marshal room state: %v", err)
+		return err
+	}
+
+	// 全クライアントに送信
+	if err := client.WriteMessage(websocket.TextMessage, roomStateJSON); err != nil {
+		fmt.Printf("Failed to send message to WebSocket client: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 // WebSocket用のアップグレーダ
