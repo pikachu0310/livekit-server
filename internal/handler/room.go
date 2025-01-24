@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/livekit"
 	"github.com/livekit/protocol/webhook"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/pikachu0310/livekit-server/openapi/models"
 	"net/http"
+	"time"
 )
 
 // LiveKitWebhook POST /webhook
@@ -63,8 +66,11 @@ func (h *Handler) broadcastRoomState() {
 	h.Mutex.Lock()
 	defer h.Mutex.Unlock()
 
+	// RoomStateをRoomWithParticipantsの形式に変換
+	rooms := h.convertRoomStateToRoomWithParticipants()
+
 	// 全ルームの状態をJSONにシリアライズ
-	roomStateJSON, err := json.Marshal(h.RoomState)
+	roomStateJSON, err := json.Marshal(rooms)
 	if err != nil {
 		fmt.Printf("Failed to marshal room state: %v", err)
 		return
@@ -78,6 +84,38 @@ func (h *Handler) broadcastRoomState() {
 			delete(h.Clients, client)
 		}
 	}
+}
+
+// RoomStateをRoomWithParticipantsに変換
+func (h *Handler) convertRoomStateToRoomWithParticipants() []models.RoomWithParticipants {
+	var rooms []models.RoomWithParticipants
+
+	for roomId, participants := range h.RoomState {
+		var participantModels []models.Participant
+
+		// 各参加者をParticipant構造体に変換
+		for _, identity := range participants {
+			participantModels = append(participantModels, models.Participant{
+				Identity: &identity,
+				JoinedAt: nil, // Join時刻は記録していないので未設定
+				Name:     nil, // 名前も未設定 (必要なら追加実装)
+			})
+		}
+
+		// RoomWithParticipants構造体を作成
+		parsedRoomId, err := uuid.Parse(roomId)
+		if err != nil {
+			fmt.Printf("Invalid room ID format: %v\n", err)
+			continue // 無効なroomIdはスキップ
+		}
+
+		rooms = append(rooms, models.RoomWithParticipants{
+			RoomId:       parsedRoomId,
+			Participants: participantModels,
+		})
+	}
+
+	return rooms
 }
 
 // InitializeRoomState LiveKit APIから現在のルーム状態を取得 (初期化時に利用)
@@ -164,14 +202,8 @@ func (h *Handler) GetRooms(ctx echo.Context) error {
 	}
 
 	// 3) 各ルームの参加者を取得し、まとめる
-	type RoomInfo struct {
-		RoomName     string   `json:"roomName"`
-		Participants []string `json:"participants"`
-	}
-	var result []RoomInfo
-
+	var roomWithParticipants []models.RoomWithParticipants
 	for _, rm := range roomResp.Rooms {
-		// ルーム毎に参加者一覧を取得
 		partResp, err := rsClient.ListParticipants(context.Background(), &livekit.ListParticipantsRequest{
 			Room: rm.Name,
 		})
@@ -181,18 +213,29 @@ func (h *Handler) GetRooms(ctx echo.Context) error {
 			})
 		}
 
-		// identityのリストだけ抽出
-		var identities []string
-		for _, p := range partResp.Participants {
-			identities = append(identities, p.Identity)
+		roomId, err := uuid.Parse(rm.Name)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, map[string]string{
+				"error": fmt.Sprintf("failed to parse room UUID: %v", err),
+			})
 		}
 
-		result = append(result, RoomInfo{
-			RoomName:     rm.Name,
-			Participants: identities,
+		var Participants []models.Participant
+		for _, p := range partResp.Participants {
+			t := time.Unix(p.JoinedAt, 0).In(time.FixedZone("Asia/Tokyo", 9*60*60))
+			Participants = append(Participants, models.Participant{
+				Identity: &p.Identity,
+				JoinedAt: &t,
+				Name:     &p.Name,
+			})
+		}
+
+		roomWithParticipants = append(roomWithParticipants, models.RoomWithParticipants{
+			RoomId:       roomId,
+			Participants: Participants,
 		})
 	}
 
 	// 4) JSONで返却
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, roomWithParticipants)
 }
