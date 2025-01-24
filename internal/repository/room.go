@@ -2,11 +2,12 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pikachu0310/livekit-server/openapi/models"
-	"time"
 )
 
 // InitializeRoomState LiveKit APIから現在のルーム状態を取得 (初期化時に利用)
@@ -71,6 +72,26 @@ func (r *Repository) GetRoomsWithParticipantsByLiveKitServerAndSave(ctx context.
 
 func (r *Repository) AddRoomState(room models.RoomWithParticipants) {
 	r.RoomState = append(r.RoomState, room)
+}
+
+func (r *Repository) CreateRoomState(roomId string) error {
+	roomUUID, err := uuid.Parse(roomId)
+	if err != nil {
+		return err
+	}
+	r.AddRoomState(models.RoomWithParticipants{
+		RoomId:       roomUUID,
+		Participants: make([]models.Participant, 0),
+	})
+	return nil
+}
+
+func (r *Repository) RemoveRoomState(roomId string) {
+	for i, roomState := range r.RoomState {
+		if roomState.RoomId.String() == roomId {
+			r.RoomState = append(r.RoomState[:i], r.RoomState[i+1:]...)
+		}
+	}
 }
 
 func (r *Repository) NewLiveKitRoomServiceClient() *lksdk.RoomServiceClient {
