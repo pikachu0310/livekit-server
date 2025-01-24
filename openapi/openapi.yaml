@@ -103,7 +103,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          application/webhook+json:
             schema:
               type: object
               description: LiveKit Webhook イベントのペイロード
