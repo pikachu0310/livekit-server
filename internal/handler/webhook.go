@@ -28,17 +28,9 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 	case webhook.EventParticipantJoined:
 		fmt.Printf("Participant joined: room=%s, participant=%s", event.Room.Name, event.Participant.Identity)
 		h.repo.AddParticipantToRoomState(event.Room, event.Participant)
-		// err := h.repo.GetRoomsWithParticipantsByLiveKitServerAndSave(c.Request().Context())
-		// if err != nil {
-		// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error on GetRoomsWithParticipantsByLiveKitServer": err.Error()})
-		// }
 	case webhook.EventParticipantLeft:
 		fmt.Printf("Participant left: room=%s, participant=%s", event.Room.Name, event.Participant.Identity)
 		h.repo.RemoveParticipant(event.Room.Name, event.Participant.Identity)
-		// err := h.repo.GetRoomsWithParticipantsByLiveKitServerAndSave(c.Request().Context())
-		// if err != nil {
-		// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error on GetRoomsWithParticipantsByLiveKitServer": err.Error()})
-		// }
 	case webhook.EventRoomStarted:
 		fmt.Printf("Room started: room=%s", event.Room.Name)
 		err := h.repo.CreateRoomState(event.Room.Name)
@@ -51,10 +43,6 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 
 	default:
 		fmt.Printf("Unhandled webhook event: %s", event.Event)
-		// err := h.repo.GetRoomsWithParticipantsByLiveKitServerAndSave(c.Request().Context())
-		// if err != nil {
-		// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error on GetRoomsWithParticipantsByLiveKitServer": err.Error()})
-		// }
 	}
 
 	// 全ルームの状態をWebSocketでブロードキャスト
