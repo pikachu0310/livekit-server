@@ -7,14 +7,16 @@ import (
 )
 
 type Handler struct {
-	repo    *repository.Repository
-	Clients map[*websocket.Conn]bool
-	Mutex   sync.Mutex
+	repo        *repository.Repository
+	Clients     map[*websocket.Conn]bool
+	Mutex       sync.Mutex
+	fileService *FileService
 }
 
 func New(repo *repository.Repository) *Handler {
 	return &Handler{
-		repo:    repo,
-		Clients: make(map[*websocket.Conn]bool),
+		repo:        repo,
+		Clients:     make(map[*websocket.Conn]bool),
+		fileService: NewFileService(),
 	}
 }
