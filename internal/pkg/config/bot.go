@@ -7,6 +7,7 @@ import (
 func NewTraQBot() *traqwsbot.Bot {
 	newBot, err := traqwsbot.NewBot(&traqwsbot.Options{
 		AccessToken: getEnv("TRAQ_ACCESS_TOKEN", ""),
+		Origin:      getEnv("TRAQ_ORIGIN", "wss://q.trap.jp"),
 	})
 	if err != nil {
 		panic(err)
