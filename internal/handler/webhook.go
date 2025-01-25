@@ -31,12 +31,6 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 	case webhook.EventParticipantLeft:
 		fmt.Printf("Participant left: room=%s, participant=%s", event.Room.Name, event.Participant.Identity)
 		h.repo.RemoveParticipant(event.Room.Name, event.Participant.Identity)
-	case webhook.EventRoomStarted:
-		fmt.Printf("Room started: room=%s", event.Room.Name)
-		err := h.repo.CreateRoomState(event.Room.Name)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error on CreateRoomState": err.Error()})
-		}
 	case webhook.EventRoomFinished:
 		fmt.Printf("Room finished: room=%s", event.Room.Name)
 		h.repo.RemoveRoomState(event.Room.Name)

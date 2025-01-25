@@ -14,6 +14,9 @@ type Participant struct {
 	// Attributes ユーザーに関連付けられたカスタム属性
 	Attributes *map[string]string `json:"attributes,omitempty"`
 
+	// CanPublish 発言権限
+	CanPublish *bool `json:"canPublish,omitempty"`
+
 	// Identity ユーザーID_RandomUUID
 	Identity *string `json:"identity,omitempty"`
 
@@ -26,6 +29,8 @@ type Participant struct {
 
 // RoomWithParticipants defines model for RoomWithParticipants.
 type RoomWithParticipants struct {
+	// IsWebinar ウェビナールームかどうか
+	IsWebinar    *bool         `json:"isWebinar,omitempty"`
 	Participants []Participant `json:"participants"`
 
 	// RoomId ルームのID
@@ -36,6 +41,9 @@ type RoomWithParticipants struct {
 type GetLiveKitTokenParams struct {
 	// Room 参加するルームのUUID
 	Room openapi_types.UUID `form:"room" json:"room"`
+
+	// IsWebinar ウェビナールームかどうか(デフォルト false)
+	IsWebinar *bool `form:"isWebinar,omitempty" json:"isWebinar,omitempty"`
 }
 
 // LiveKitWebhookApplicationWebhookPlusJSONBody defines parameters for LiveKitWebhook.
