@@ -55,6 +55,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 	// ルームが存在しない場合はCanPublish=true
 	// ルームが存在して、webinar=true の場合はCanPublish=false
 	at := auth.NewAccessToken(apiKey, apiSecret)
+	fmt.Println("canPublish", !(isWebinar && isExistingRoom))
 	grant := &auth.VideoGrant{
 		RoomJoin:             true,
 		Room:                 room,
