@@ -94,7 +94,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 	// 8) ルーム状態を更新
 	if !isExistingRoom {
 		metadata := util.Metadata{
-			Metadata:  "",
+			Status:    "",
 			IsWebinar: isWebinar,
 		}
 		metadataStr, err := json.Marshal(metadata)

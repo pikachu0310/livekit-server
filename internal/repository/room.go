@@ -162,7 +162,7 @@ func (r *Repository) GetRoomsWithParticipantsByLiveKitServer(ctx context.Context
 		}
 
 		roomWithParticipants = append(roomWithParticipants, models.RoomWithParticipants{
-			Metadata:     &metadata.Metadata,
+			Metadata:     &metadata.Status,
 			IsWebinar:    &metadata.IsWebinar,
 			RoomId:       roomId,
 			Participants: Participants,

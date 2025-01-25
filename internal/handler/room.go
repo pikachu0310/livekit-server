@@ -95,7 +95,7 @@ func (h *Handler) ChangeRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 					// ルームのメタデータを変更
 					room.Metadata = &req.Metadata
 					metadata := &util.Metadata{
-						Metadata:  req.Metadata,
+						Status:    req.Metadata,
 						IsWebinar: *room.IsWebinar,
 					}
 					metadataStr, err := json.Marshal(metadata)
