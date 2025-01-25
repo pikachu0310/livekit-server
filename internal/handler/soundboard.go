@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"io"
 	"net/http"
 	"time"
@@ -18,6 +19,13 @@ import (
 // PostSoundboard handles uploading a short audio file (<=15s) to S3, storing metadata in DB
 // POST /soundboard
 func (h *Handler) PostSoundboard(c echo.Context) error {
+	userId, err := util.GetTraqUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
+			"error: AuthTraQClient": err.Error(),
+		})
+	}
+
 	// 1) multipart フォームから取得
 	file, err := c.FormFile("audio")
 	if err != nil {
@@ -48,7 +56,7 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 			"error": fmt.Sprintf("failed to read file bytes: %v", err),
 		})
 	}
-	// TODO: ファイルが15秒以下かどうかの検証 (省略)
+	// TODO: ファイルが20秒以下かどうかの検証 (省略)
 
 	// 3) サウンドID を生成
 	soundId := uuid.NewString()
@@ -65,7 +73,7 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 	}
 
 	// 5) DBに (soundId, soundName, stampId=空) などを保存
-	err = h.repo.InsertSoundboardItem(soundId, soundName, stampId) // stampId はまだ未指定
+	err = h.repo.InsertSoundboardItem(soundId, soundName, stampId, userId) // stampId はまだ未指定
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("failed to insert soundboard item: %v", err),
@@ -167,6 +175,7 @@ func (h *Handler) GetSoundboardList(c echo.Context) error {
 			SoundId:   it.SoundID,
 			SoundName: it.SoundName,
 			StampId:   it.StampID,
+			CreatorId: it.CreatorID,
 		})
 	}
 

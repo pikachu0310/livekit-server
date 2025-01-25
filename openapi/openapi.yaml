@@ -426,10 +426,14 @@ components:
         stampId:
           type: string
           description: 任意のスタンプID等、サウンドに紐づく拡張情報
+        creatorId:
+          type: string
+          description: 作成者のユーザID
       required:
         - soundId
         - soundName
         - stampId
+        - creatorId
 
     # POST /soundboard multipart/form-data
     SoundboardUploadRequest:
@@ -438,7 +442,7 @@ components:
         audio:
           type: string
           format: binary
-          description: アップロードする音声ファイル(15秒以内)
+          description: アップロードする音声ファイル(20秒以内)
         soundName:
           type: string
           description: ユーザが自由につけるサウンド名

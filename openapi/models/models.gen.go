@@ -45,6 +45,9 @@ type RoomsListResponse = []RoomWithParticipants
 
 // SoundboardItem defines model for SoundboardItem.
 type SoundboardItem struct {
+	// CreatorId 作成者のユーザID
+	CreatorId string `json:"creatorId"`
+
 	// SoundId サーバが発行したサウンドID
 	SoundId string `json:"soundId"`
 
@@ -81,7 +84,7 @@ type SoundboardPlayResponse struct {
 
 // SoundboardUploadRequest defines model for SoundboardUploadRequest.
 type SoundboardUploadRequest struct {
-	// Audio アップロードする音声ファイル(15秒以内)
+	// Audio アップロードする音声ファイル(20秒以内)
 	Audio openapi_types.File `json:"audio"`
 
 	// SoundName ユーザが自由につけるサウンド名
