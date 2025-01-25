@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"github.com/labstack/echo/v4"
 	"github.com/pikachu0310/livekit-server/openapi/models"
-	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -38,7 +38,7 @@ func (h *Handler) GetRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 		})
 	}
 
-	_, echoErr := util.AuthTraQClient(ctx)
+	_, echoErr := util.GetTraqUserID(ctx)
 	if echoErr != nil {
 		return ctx.JSON(http.StatusUnauthorized, map[string]string{
 			"error on AuthTraQClient": echoErr.Error(),
@@ -81,7 +81,7 @@ func (h *Handler) UpdateRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 
 	c := lksdk.NewRoomServiceClient(apiHost, apiKey, apiSecret)
 
-	userID, echoErr := util.AuthTraQClient(ctx)
+	userID, echoErr := util.GetTraqUserID(ctx)
 	if echoErr != nil {
 		return ctx.JSON(http.StatusUnauthorized, map[string]string{
 			"error on AuthTraQClient": echoErr.Error(),
@@ -156,7 +156,7 @@ func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID uuid.UUID) erro
 		})
 	}
 
-	userID, err := util.AuthTraQClient(ctx)
+	userID, err := util.GetTraqUserID(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusUnauthorized, map[string]string{
 			"error on AuthTraQClient": err.Error(),

@@ -35,7 +35,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 
 	isWebinar := c.QueryParam("isWebinar") == "true"
 
-	userID, echoError := util.AuthTraQClient(c)
+	userID, echoError := util.GetTraqUserID(c)
 	if echoError != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
 			"error": echoError.Error(),

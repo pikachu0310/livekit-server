@@ -9,6 +9,7 @@ import (
 	"github.com/pikachu0310/livekit-server/internal/migration"
 	"github.com/pikachu0310/livekit-server/internal/pkg/bot"
 	"github.com/pikachu0310/livekit-server/internal/pkg/config"
+	mw "github.com/pikachu0310/livekit-server/internal/pkg/middleware"
 	"github.com/pikachu0310/livekit-server/internal/repository"
 	"github.com/pikachu0310/livekit-server/openapi"
 	"net/http"
@@ -29,10 +30,11 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Logger())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"http://localhost:8080", "https://*.traq-preview.trapti.tech", "https://*.livekit.trap.show"},
+		AllowOrigins: []string{"http://localhost:8080", "https://*.traq-preview.trapti.tech", "https://*.livekit.trap.show", "https://*.trap.jp"},
 		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
 	}))
 	//e.Use(oapimiddleware.OapiRequestValidator(swagger))
+	e.Use(mw.AuthTraQMiddlewareWithPathSkipper)
 
 	// connect to database
 	db, err := sqlx.Connect("mysql", config.MySQL().FormatDSN())
