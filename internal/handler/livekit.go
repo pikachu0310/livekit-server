@@ -27,6 +27,12 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 		})
 	}
 
+	if !h.repo.CheckChannelExistence(room) {
+		return c.JSON(http.StatusNotFound, map[string]string{
+			"error": "Channel not found: " + room,
+		})
+	}
+
 	isWebinar := c.QueryParam("isWebinar") == "true"
 
 	userID, echoError := util.AuthTraQClient(c)
@@ -122,6 +128,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 			Participants: []models.Participant{},
 		}
 		h.repo.AddRoomState(roomWithParticipants)
+		h.repo.SendStartRoomMessageToTraQ(room)
 	}
 
 	// 9) 最終的にトークンをJSONで返す
