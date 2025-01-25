@@ -36,7 +36,8 @@ paths:
     get:
       summary: LiveKitトークンを取得
       description: >
-        指定したルームに参加するためのLiveKitトークンを取得します。
+        指定したルームに参加するためのLiveKitトークンを取得します。  
+        リクエストヘッダに Bearer トークンを含めることで、認証後に LiveKit用トークンを返します。  
         例: `GET /token?room={UUID}`
       operationId: getLiveKitToken
       tags:
@@ -61,13 +62,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    description: LiveKit用のJWTトークン
-                required:
-                  - token
+                $ref: '#/components/schemas/TokenResponse'
         '400':
           description: Bad Request
         '401':
@@ -89,9 +84,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RoomWithParticipants'
+                $ref: '#/components/schemas/RoomsListResponse'
         '404':
           description: Not Found
         '500':
@@ -164,7 +157,7 @@ paths:
     post:
       summary: LiveKit Webhook受信
       description: >
-        LiveKit側で設定したWebhookから呼び出されるエンドポイントです。
+        LiveKit側で設定したWebhookから呼び出されるエンドポイントです。  
         参加者の入室・退出などのイベントを受け取り、サーバ内で処理を行います。
       operationId: liveKitWebhook
       tags:
@@ -188,8 +181,8 @@ paths:
     get:
       summary: WebSocketエンドポイント
       description: >
-        WebSocketを通じてルームの参加者一覧などをリアルタイムに受け取るためのエンドポイントです。
-        Livekit側から誰かが入室/退出したイベントを受け取った時に、
+        WebSocketを通じてルームの参加者一覧などをリアルタイムに受け取るためのエンドポイントです。  
+        Livekit側から誰かが入室/退出したイベントを受け取った時に、  
         全ての部屋の情報 (RoomWithParticipants) を返します。
       operationId: getWs
       tags:
@@ -200,8 +193,88 @@ paths:
         '500':
           description: Internal Server Error
 
+  /soundboard:
+    get:
+      summary: サウンドボード用の音声一覧を取得
+      description: >
+        DBに保存されたサウンドボード情報を取得します。  
+        各アイテムには soundId, soundName, stampId が含まれます。
+      operationId: getSoundboardList
+      tags:
+        - livekit
+      responses:
+        '200':
+          description: サウンド一覧の取得に成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoundboardListResponse'
+        '500':
+          description: サーバエラー
+
+    post:
+      summary: サウンドボード用の短い音声ファイルをアップロード
+      description: >
+        15秒程度の短い音声ファイルを multipart/form-data で送信し、S3(互換ストレージ)にアップロードします。  
+        クライアントは「soundName」というフィールドを送信し、それをDBに保存して関連付けを行います。  
+        また、サーバ側で soundId を自動生成し、S3のファイル名に使用します。
+      operationId: postSoundboard
+      tags:
+        - livekit
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SoundboardUploadRequest'
+      responses:
+        '200':
+          description: アップロード成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoundboardUploadResponse'
+        '400':
+          description: ファイルが提供されていない等
+        '500':
+          description: アップロードエラーなどのサーバエラー
+
+  /soundboard/play:
+    post:
+      summary: アップロード済み音声を LiveKit ルームで再生
+      description: >
+        S3上にある音声ファイルの署名付きURLを生成し、  
+        Ingressを介して指定ルームに音声を流します。  
+        リクエストヘッダの認証トークンからユーザIDを取得し、  
+        該当ルームに参加しているユーザであれば再生可能とします。
+      operationId: postSoundboardPlay
+      tags:
+        - livekit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SoundboardPlayRequest'
+      responses:
+        '200':
+          description: Ingressの作成に成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoundboardPlayResponse'
+        '400':
+          description: パラメータ不足 or ユーザが部屋にいない等
+        '401':
+          description: 認証エラー
+        '500':
+          description: Ingress作成失敗などのサーバエラー
+
 components:
   schemas:
+    # -------------------------------
+    # ルーム参加者関連
+    # -------------------------------
     RoomWithParticipants:
       type: object
       properties:
@@ -241,3 +314,117 @@ components:
         canPublish:
           type: boolean
           description: 発言権限
+
+    RoomWithParticipants:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+          description: ルームのID
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+      required:
+        - roomId
+        - participants
+
+    # GET /rooms レスポンス
+    RoomsListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/RoomWithParticipants'
+
+    # -------------------------------
+    # Webhook, Token関連
+    # -------------------------------
+    TokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: LiveKit用のJWTトークン
+      required:
+        - token
+
+    # -------------------------------
+    # サウンドボード関連
+    # -------------------------------
+    # GET /soundboard レスポンス
+    SoundboardListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/SoundboardItem'
+
+    # サウンド一覧の各アイテム
+    SoundboardItem:
+      type: object
+      properties:
+        soundId:
+          type: string
+          description: サーバが発行したサウンドID
+        soundName:
+          type: string
+          description: ユーザが指定した表示用のサウンド名
+        stampId:
+          type: string
+          description: 任意のスタンプID等、サウンドに紐づく拡張情報
+      required:
+        - soundId
+        - soundName
+        - stampId
+
+    # POST /soundboard multipart/form-data
+    SoundboardUploadRequest:
+      type: object
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: アップロードする音声ファイル(15秒以内)
+        soundName:
+          type: string
+          description: ユーザが自由につけるサウンド名
+      required:
+        - audio
+        - soundName
+
+    SoundboardUploadResponse:
+      type: object
+      properties:
+        soundId:
+          type: string
+          description: 登録されたサウンドID (ファイル名)
+      required:
+        - soundId
+
+    # POST /soundboard/play
+    SoundboardPlayRequest:
+      type: object
+      properties:
+        soundId:
+          type: string
+          description: サウンドID (DB登録済み)
+        roomName:
+          type: string
+          format: uuid
+          description: 再生させたいルームのUUID
+      required:
+        - soundId
+        - roomName
+
+    SoundboardPlayResponse:
+      type: object
+      properties:
+        ingressId:
+          type: string
+          description: 作成された Ingress のID
+        url:
+          type: string
+          description: 作成された Ingress のストリームURL等
+        streamKey:
+          type: string
+          description: RTMP配信の場合のstream key
+      required:
+        - ingressId
