@@ -102,6 +102,35 @@ func GetStamp(stampID string) (*traq.Stamp, error) {
 	return stamp, err
 }
 
+func GetUser(userID string) (*traq.UserDetail, error) {
+	user, _, err := bot.API().
+		UserApi.
+		GetUser(context.Background(), userID).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, err
+}
+
+func GetUserByName(userName string) (*traq.User, error) {
+	user, _, err := bot.API().
+		UserApi.
+		GetUsers(context.Background()).
+		Name(userName).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(user) == 1 {
+		return &user[0], err
+	}
+
+	return nil, fmt.Errorf("user not found")
+}
+
 /*
 func main() {
 	bot.OnMessageCreated(func(p *payload.MessageCreated) {

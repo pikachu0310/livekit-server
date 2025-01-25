@@ -79,13 +79,16 @@ func (r *Repository) GetChannelFullPath(channelId string) string {
 }
 
 func (r *Repository) CheckStampExistence(stampId string) bool {
-	_, ok := traQChannels[stampId]
-	if !ok {
-		err := r.GetTraQChannelsAndSet()
-		if err != nil {
-			return false
-		}
-		_, ok = traQChannels[stampId]
-	}
-	return ok
+	_, err := bot.GetStamp(stampId)
+	return err == nil
+}
+
+func (r *Repository) CheckUserExistence(userId string) bool {
+	_, err := bot.GetUser(userId)
+	return err == nil
+}
+
+func (r *Repository) CheckUserExistenceByName(userName string) bool {
+	_, err := bot.GetUserByName(userName)
+	return err == nil
 }
