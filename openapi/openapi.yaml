@@ -315,21 +315,6 @@ components:
           type: boolean
           description: 発言権限
 
-    RoomWithParticipants:
-      type: object
-      properties:
-        roomId:
-          type: string
-          format: uuid
-          description: ルームのID
-        participants:
-          type: array
-          items:
-            $ref: '#/components/schemas/Participant'
-      required:
-        - roomId
-        - participants
-
     # GET /rooms レスポンス
     RoomsListResponse:
       type: array

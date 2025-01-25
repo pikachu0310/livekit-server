@@ -6,11 +6,9 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pikachu0310/livekit-server/internal/pkg/util"
-	"github.com/pikachu0310/livekit-server/openapi/models"
 )
 
 // GetRooms GET /rooms
