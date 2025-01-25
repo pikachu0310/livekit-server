@@ -1,22 +1,27 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/pikachu0310/livekit-server/internal/pkg/util"
-	"io"
-	"net/http"
-	"time"
-
+	"github.com/go-audio/wav"
 	"github.com/google/uuid"
+	"github.com/hajimehoshi/go-mp3"
+	"github.com/jfreymuth/oggvorbis"
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
-
+	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"github.com/pikachu0310/livekit-server/openapi/models"
+	"io"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
-// PostSoundboard handles uploading a short audio file (<=15s) to S3, storing metadata in DB
+// PostSoundboard handles uploading a short audio file (<=20s) to S3, storing metadata in DB
 // POST /soundboard
 func (h *Handler) PostSoundboard(c echo.Context) error {
 	userId, err := util.GetTraqUserID(c)
@@ -26,19 +31,23 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 		})
 	}
 
-	// 1) multipart フォームから取得
+	// multipart フォームから取得
 	file, err := c.FormFile("audio")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "audio file is required (multipart form field: 'audio')",
 		})
 	}
+
+	// soundName
 	soundName := c.FormValue("soundName")
 	if soundName == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "soundName is required (multipart form field: 'soundName')",
 		})
 	}
+
+	// stampId
 	stampId := c.FormValue("stampId")
 	if stampId == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -51,7 +60,15 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 		})
 	}
 
-	// 2) ファイルを読み込み
+	// Content-Type が audio/ で始まらない場合は 400
+	contentType := file.Header.Get("Content-Type")
+	if !strings.HasPrefix(contentType, "audio/") {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": fmt.Sprintf("invalid content-type: %s", contentType),
+		})
+	}
+
+	// ファイルを読み込み
 	src, err := file.Open()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -59,42 +76,138 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 		})
 	}
 	defer src.Close()
-
 	fileBytes, err := io.ReadAll(src)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("failed to read file bytes: %v", err),
 		})
 	}
-	// TODO: ファイルが20秒以下かどうかの検証 (省略)
 
-	// 3) サウンドID を生成
+	// 拡張子を取得し、小文字化
+	// 例: .mp3, .wav, .ogg など
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+
+	// 音声ファイルであり、20秒以内か判定
+	if err := checkAudioDuration(fileBytes, ext, 20.0); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	// soundId を生成
 	soundId := uuid.NewString()
 
-	// 4) S3へアップロード
+	// S3へアップロード
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
-	err = h.FileService.UploadFile(ctx, fileBytes, soundId) // ファイル名としてsoundIdを使用
-	if err != nil {
+	if err := h.FileService.UploadFile(ctx, fileBytes, soundId); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("failed to upload file: %v", err),
 		})
 	}
 
-	// 5) DBに (soundId, soundName, stampId=空) などを保存
-	err = h.repo.InsertSoundboardItem(soundId, soundName, stampId, userId) // stampId はまだ未指定
-	if err != nil {
+	// DB保存
+	if err := h.repo.InsertSoundboardItem(soundId, soundName, stampId, userId); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": fmt.Sprintf("failed to insert soundboard item: %v", err),
 		})
 	}
 
-	// 6) SoundboardUploadResponse を返す
-	resp := models.SoundboardUploadResponse{
-		SoundId: soundId,
-	}
+	resp := models.SoundboardUploadResponse{SoundId: soundId}
 	return c.JSON(http.StatusOK, resp)
+}
+
+// checkAudioDuration は拡張子(ext)に基づいて対応ライブラリを使い、秒数をチェックする
+// mp3 / wav / ogg に対応し、それ以外は "we only support mp3, wav, ogg" エラー
+func checkAudioDuration(fileBytes []byte, ext string, maxSeconds float64) error {
+	switch ext {
+	case ".mp3":
+		dur, err := getMp3Duration(fileBytes)
+		if err != nil {
+			return fmt.Errorf("mp3 decode error: %w", err)
+		}
+		if dur > maxSeconds {
+			return fmt.Errorf("audio is too long (%.1f sec). Must be <= %.0f", dur, maxSeconds)
+		}
+		return nil
+
+	case ".wav":
+		dur, err := getWavDuration(fileBytes)
+		if err != nil {
+			return fmt.Errorf("wav decode error: %w", err)
+		}
+		if dur > maxSeconds {
+			return fmt.Errorf("audio is too long (%.1f sec). Must be <= %.0f", dur, maxSeconds)
+		}
+		return nil
+
+	case ".ogg":
+		dur, err := getOggDuration(fileBytes)
+		if err != nil {
+			return fmt.Errorf("ogg decode error: %w", err)
+		}
+		if dur > maxSeconds {
+			return fmt.Errorf("audio is too long (%.1f sec). Must be <= %.0f", dur, maxSeconds)
+		}
+		return nil
+
+	default:
+		return errors.New("we only support .mp3, .wav, .ogg")
+	}
+}
+
+// getMp3Duration returns duration in seconds for MP3
+func getMp3Duration(data []byte) (float64, error) {
+	r := bytes.NewReader(data)
+	decoder, err := mp3.NewDecoder(r)
+	if err != nil {
+		return 0, err
+	}
+	// decoder.Length() はサンプル数
+	// decoder.SampleRate() はサンプリングレート(例: 44100)
+	sampleRate := float64(decoder.SampleRate())
+	totalSamples := float64(decoder.Length())
+	if sampleRate <= 0 {
+		return 0, errors.New("invalid mp3 sample rate")
+	}
+	seconds := totalSamples / sampleRate
+	return seconds, nil
+}
+
+// getWavDuration returns duration in seconds for WAV
+func getWavDuration(data []byte) (float64, error) {
+	r := bytes.NewReader(data)
+	wavDecoder := wav.NewDecoder(r)
+	buf, err := wavDecoder.FullPCMBuffer()
+	if err != nil {
+		return 0, err
+	}
+	if buf == nil || buf.Format == nil {
+		return 0, errors.New("invalid wav format or buffer")
+	}
+	sampleRate := float64(buf.Format.SampleRate)
+	sampleCount := float64(len(buf.Data)) // PCMBufferのサンプル数
+	if sampleRate <= 0 {
+		return 0, errors.New("invalid wav sample rate")
+	}
+	seconds := sampleCount / sampleRate
+	return seconds, nil
+}
+
+// getOggDuration returns duration in seconds for OGG(Vorbis)
+func getOggDuration(data []byte) (float64, error) {
+	r := bytes.NewReader(data)
+	stream, err := oggvorbis.NewReader(r)
+	if err != nil {
+		return 0, err
+	}
+	sampleRate := float64(stream.SampleRate())
+	sampleCount := float64(stream.Length()) // Total samples
+	if sampleRate <= 0 {
+		return 0, errors.New("invalid ogg sample rate")
+	}
+	seconds := sampleCount / sampleRate
+	return seconds, nil
 }
 
 // PostSoundboardPlay triggers playing an uploaded audio file via LiveKit Ingress
