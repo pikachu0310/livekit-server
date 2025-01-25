@@ -49,6 +49,12 @@ paths:
             format: uuid
           required: true
           description: 参加するルームのUUID
+        - in: query
+          name: isWebinar
+          schema:
+            type: boolean
+          required: false
+          description: ウェビナールームかどうか(デフォルト false)
       responses:
         '200':
           description: 成功 - LiveKitトークンを返します
@@ -90,6 +96,69 @@ paths:
           description: Not Found
         '500':
           description: Internal Server Error
+          
+  /rooms/{roomId}/participants:
+    patch:
+      summary: ルームでの発言権限を変更
+      description: >
+        ルーム内の参加者の発言権限を変更します。
+      operationId: changeParticipantRole
+      tags:
+        - livekit
+      parameters:
+        - in: path
+          name: roomId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ルームのUUID
+        - in: body
+          name: body
+          description: 発言権限を変更する参加者の情報
+          required: true
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Participant'
+      responses:
+        '200':
+          description: 成功 - 発言権限を変更（部分的成功含む）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        participantId:
+                          type: string
+                          description: 対象参加者ID
+                        status:
+                          type: string
+                          description: "success もしくは error"
+                        errorMessage:
+                          type: string
+                          description: エラーがある場合の詳細
+              example:
+                results:
+                  - participantId: "user1"
+                    status: "success"
+                  - participantId: "user2"
+                    status: "error"
+                    errorMessage: "Invalid participant ID"
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
 
   /webhook:
     post:
@@ -144,6 +213,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Participant'
+        isWebinar:
+          type: boolean
+          description: ウェビナールームかどうか
       required:
         - roomId
         - participants
@@ -166,3 +238,6 @@ components:
           additionalProperties:
             type: string
           description: ユーザーに関連付けられたカスタム属性
+        canPublish:
+          type: boolean
+          description: 発言権限
