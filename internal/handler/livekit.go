@@ -26,6 +26,8 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 
 	isWebinar := c.QueryParam("webinar") == "true"
 
+	fmt.Println("isWebinar", isWebinar)
+
 	userID, echoError := util.AuthTraQClient(c)
 	if echoError != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
@@ -79,6 +81,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 	// 8) ルーム状態を更新
 	if !isExistingRoom {
 		// ルームが存在しない場合は新規作成
+		fmt.Println("Creating new room state")
 		roomWithParticipants := models.RoomWithParticipants{
 			RoomId:       uuid.MustParse(room),
 			Participants: []models.Participant{},
