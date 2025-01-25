@@ -80,9 +80,9 @@ func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID string) error {
 					failedUsers[*participant.Identity] = err.Error()
 				} else {
 					succeedUsers = append(succeedUsers, *participant.Identity)
+					h.repo.UpdateParticipantCanPublish(roomID, *participant.Identity, *participant.CanPublish)
 				}
 
-				h.repo.UpdateParticipantCanPublish(roomID, *participant.Identity, *participant.CanPublish)
 			}
 		}
 		break
