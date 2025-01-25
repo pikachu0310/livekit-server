@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -24,7 +25,7 @@ func (h *Handler) GetRooms(ctx echo.Context) error {
 
 // PatchRoomParticipants PATCH /rooms/:room_id/participants
 // ルームの発言権限を変更する。
-func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID string) error {
+func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID uuid.UUID) error {
 	// リクエストボディを取得
 	var req []models.Participant
 	var succeedUsers []string
@@ -53,7 +54,7 @@ func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID string) error {
 
 	// ルームが存在するか確認
 	for _, roomState := range h.repo.RoomState {
-		if roomState.RoomId.String() == roomID {
+		if roomState.RoomId == roomID {
 			// userがcanPublishかどうかを確認
 			canPublish := false
 			for _, participant := range roomState.Participants {
@@ -70,7 +71,7 @@ func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID string) error {
 			c := lksdk.NewRoomServiceClient(apiHost, apiKey, apiSecret)
 			for _, participant := range req {
 				_, err := c.UpdateParticipant(ctx.Request().Context(), &livekit.UpdateParticipantRequest{
-					Room:     roomID,
+					Room:     roomID.String(),
 					Identity: *participant.Identity,
 					Permission: &livekit.ParticipantPermission{
 						CanPublish: *participant.CanPublish,
@@ -80,7 +81,7 @@ func (h *Handler) ChangeParticipantRole(ctx echo.Context, roomID string) error {
 					failedUsers[*participant.Identity] = err.Error()
 				} else {
 					succeedUsers = append(succeedUsers, *participant.Identity)
-					h.repo.UpdateParticipantCanPublish(roomID, *participant.Identity, *participant.CanPublish)
+					h.repo.UpdateParticipantCanPublish(roomID.String(), *participant.Identity, *participant.CanPublish)
 				}
 
 			}
