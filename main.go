@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pikachu0310/livekit-server/internal/handler"
 	"github.com/pikachu0310/livekit-server/internal/migration"
+	"github.com/pikachu0310/livekit-server/internal/pkg/bot"
 	"github.com/pikachu0310/livekit-server/internal/pkg/config"
 	"github.com/pikachu0310/livekit-server/internal/repository"
 	"github.com/pikachu0310/livekit-server/openapi"
@@ -44,6 +45,9 @@ func main() {
 	if err := migration.MigrateTables(db.DB); err != nil {
 		e.Logger.Fatal(err)
 	}
+
+	// set and start traQ bot
+	bot.SetAndStartTraQBot()
 
 	// setup repository
 	livekitConfig := config.LoadLivekitConfig()
