@@ -103,6 +103,15 @@ type TokenResponse struct {
 	Token string `json:"token"`
 }
 
+// UpdateRoomMetadataJSONBody defines parameters for UpdateRoomMetadata.
+type UpdateRoomMetadataJSONBody struct {
+	// Metadata ルームに関連付けられたカスタム属性
+	Metadata *string `json:"metadata,omitempty"`
+}
+
+// ChangeParticipantRoleJSONBody defines parameters for ChangeParticipantRole.
+type ChangeParticipantRoleJSONBody = []Participant
+
 // GetLiveKitTokenParams defines parameters for GetLiveKitToken.
 type GetLiveKitTokenParams struct {
 	// Room 参加するルームのUUID
@@ -114,6 +123,12 @@ type GetLiveKitTokenParams struct {
 
 // LiveKitWebhookApplicationWebhookPlusJSONBody defines parameters for LiveKitWebhook.
 type LiveKitWebhookApplicationWebhookPlusJSONBody = map[string]interface{}
+
+// UpdateRoomMetadataJSONRequestBody defines body for UpdateRoomMetadata for application/json ContentType.
+type UpdateRoomMetadataJSONRequestBody UpdateRoomMetadataJSONBody
+
+// ChangeParticipantRoleJSONRequestBody defines body for ChangeParticipantRole for application/json ContentType.
+type ChangeParticipantRoleJSONRequestBody = ChangeParticipantRoleJSONBody
 
 // PostSoundboardMultipartRequestBody defines body for PostSoundboard for multipart/form-data ContentType.
 type PostSoundboardMultipartRequestBody = SoundboardUploadRequest

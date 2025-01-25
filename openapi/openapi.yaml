@@ -136,18 +136,17 @@ paths:
             format: uuid
           required: true
           description: ルームのUUID
-        - in: body
-          name: body
-          description: ルームのメタデータ
-          required: true
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  metadata:
-                    type: string
-                    description: ルームに関連付けられたカスタム属性
+      requestBody:
+        description: ルームのメタデータ
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  type: string
+                  description: ルームに関連付けられたカスタム属性
       responses:
         '200':
           description: 成功 - ルームのメタデータを更新
@@ -157,7 +156,7 @@ paths:
           description: Unauthorized
         '500':
           description: Internal Server Error
-          
+
   /rooms/{roomId}/participants:
     patch:
       summary: ルームでの発言権限を変更
@@ -174,16 +173,15 @@ paths:
             format: uuid
           required: true
           description: ルームのUUID
-        - in: body
-          name: body
-          description: 発言権限を変更する参加者の情報
-          required: true
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Participant'
+      requestBody:
+        description: 発言権限を変更する参加者の情報
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Participant'
       responses:
         '200':
           description: 成功 - 発言権限を変更（部分的成功含む）
