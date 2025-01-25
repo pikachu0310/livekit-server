@@ -14,6 +14,7 @@ func AuthTraQMiddlewareWithPathSkipper(next echo.HandlerFunc) echo.HandlerFunc {
 			"/api/ping":    true,
 			"/api/webhook": true,
 			"/api/rooms":   true,
+			"/api/ws":      true,
 		}
 		if skipPaths[c.Path()] {
 			return next(c)
