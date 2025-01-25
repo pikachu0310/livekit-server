@@ -91,7 +91,7 @@ func (h *Handler) UpdateRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 		if room.RoomId.String() == roomID.String() {
 			// ルームに参加しているか確認
 			for _, participant := range room.Participants {
-				if *participant.Identity == userID {
+				if *participant.Name == userID {
 					// ルームのメタデータを変更
 					room.Metadata = &req.Metadata
 					metadata := &util.Metadata{
