@@ -1,30 +1,17 @@
 package handler
 
 import (
-	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/auth"
 	"github.com/pikachu0310/livekit-server/openapi/models"
-	"gopkg.in/square/go-jose.v2/jwt"
 )
-
-// サンプルの公開鍵(本番では適切に管理)
-const publicKeyPEM = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErNkbjzyMz81Np8sBb8Jr3bUOkLW4
-H41Ugac0eSzPyemDvmaCIDpRofi3Rb0EgaSRSqC3IoBgVmQ+bPLtueUtUg==
------END PUBLIC KEY-----`
-const devPublicKeyPEM = `-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEsif3xPZ/ObY12BCB2SfC3045eSkq
-G9Kw2nD2DYgoJHFCPTzCLUqOKDpig4H0tYXH4RaSy6+apfgfeE/TJagHuw==
------END PUBLIC KEY-----`
 
 // GetLiveKitToken GET /token?room=UUID
 // Bearerトークン(ES256)で認証後、LiveKit接続用JWTを生成して返す。
@@ -37,55 +24,14 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 		})
 	}
 
-	// 2) AuthorizationヘッダからJWTを取得
-	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader == "" {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Authorization header is required",
-		})
-	}
-	tokenString := authHeader[len("Bearer "):]
-	parsedToken, err := jwt.ParseSigned(tokenString)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid token",
-		})
-	}
+	isWebinar := c.QueryParam("webinar") == "true"
 
-	// 3) Verify algorithm is ES256
-	if len(parsedToken.Headers) == 0 || parsedToken.Headers[0].Algorithm != "ES256" {
+	userID, echoError := util.AuthTraQClient(c)
+	if echoError != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid token algorithm",
+			"error": echoError.Error(),
 		})
 	}
-
-	// 4) 署名検証 (本番key / dev key)
-	var claims map[string]interface{}
-	if err := verifyWithECDSA(parsedToken, publicKeyPEM, devPublicKeyPEM, &claims); err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": err.Error(),
-		})
-	}
-
-	// 5) exp と name クレームをチェック
-	exp, ok := claims["exp"].(float64)
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Token missing expiration",
-		})
-	}
-	if time.Unix(int64(exp), 0).Before(time.Now()) {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Token has expired",
-		})
-	}
-	name, ok := claims["name"].(string)
-	if !ok || name == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "name claim is required in JWT",
-		})
-	}
-	userID := name
 
 	// 6) LiveKit用APIキー/シークレット
 	apiKey := h.repo.ApiKey
@@ -96,11 +42,23 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 		})
 	}
 
+	// 6-2) ルームが存在するか確認
+	isExistingRoom := false
+	for _, roomState := range h.repo.RoomState {
+		if roomState.RoomId.String() == room {
+			isExistingRoom = true
+			break
+		}
+	}
+
 	// 7) VideoGrant にルーム名、CanPublishData=true を設定
+	// ルームが存在しない場合はCanPublish=true
+	// ルームが存在して、webinar=true の場合はCanPublish=false
 	at := auth.NewAccessToken(apiKey, apiSecret)
 	grant := &auth.VideoGrant{
 		RoomJoin:             true,
 		Room:                 room,
+		CanPublish:           util.BoolPtr(!(isWebinar && isExistingRoom)),
 		CanPublishData:       util.BoolPtr(true),
 		CanUpdateOwnMetadata: util.BoolPtr(true),
 	}
@@ -118,40 +76,19 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 		})
 	}
 
+	// 8) ルーム状態を更新
+	if !isExistingRoom {
+		// ルームが存在しない場合は新規作成
+		roomWithParticipants := models.RoomWithParticipants{
+			RoomId:       uuid.MustParse(room),
+			Participants: []models.Participant{},
+			IsWebinar:    util.BoolPtr(isWebinar),
+		}
+		h.repo.AddRoomState(roomWithParticipants)
+	}
+
 	// 9) 最終的にトークンをJSONで返す
 	return c.JSON(http.StatusOK, map[string]string{
 		"token": livekitToken,
 	})
-}
-
-// verifyWithECDSA は ECDSA 公開鍵2種類(本番鍵 / 開発用鍵)で検証を試みるユーティリティ
-func verifyWithECDSA(parsedToken *jwt.JSONWebToken, primaryKey, devKey string, claims interface{}) error {
-	// 1) primary key
-	if err := verifyECDSA(parsedToken, primaryKey, claims); err == nil {
-		return nil // 成功
-	}
-	// 2) dev key
-	if err := verifyECDSA(parsedToken, devKey, claims); err == nil {
-		return nil
-	}
-	return fmt.Errorf("failed to verify with both primary & dev public key")
-}
-
-func verifyECDSA(parsedToken *jwt.JSONWebToken, keyPEM string, claims interface{}) error {
-	block, _ := pem.Decode([]byte(keyPEM))
-	if block == nil {
-		return fmt.Errorf("failed to decode PEM block")
-	}
-	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return fmt.Errorf("failed to parse PKIX public key: %v", err)
-	}
-	ecdsaPubKey, ok := pubKey.(*ecdsa.PublicKey)
-	if !ok {
-		return fmt.Errorf("not an ECDSA public key")
-	}
-	if err := parsedToken.Claims(ecdsaPubKey, claims); err != nil {
-		return err
-	}
-	return nil
 }

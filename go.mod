@@ -11,7 +11,6 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/livekit/protocol v1.32.0
 	github.com/livekit/server-sdk-go/v2 v2.4.1
-	github.com/oapi-codegen/echo-middleware v1.0.2
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pressly/goose/v3 v3.24.1
@@ -40,7 +39,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/google/cel-go v0.21.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect

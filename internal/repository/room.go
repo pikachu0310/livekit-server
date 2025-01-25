@@ -26,7 +26,20 @@ func (r *Repository) AddParticipantToRoomState(room *livekit.Room, participant *
 				JoinedAt:   &t,
 				Name:       &participant.Name,
 				Attributes: &participant.Attributes,
+				CanPublish: &participant.Permission.CanPublish,
 			})
+		}
+	}
+}
+
+func (r *Repository) UpdateParticipantCanPublish(roomId string, participantId string, canPublish bool) {
+	for i, roomState := range r.RoomState {
+		if roomState.RoomId.String() == roomId {
+			for j, participant := range roomState.Participants {
+				if *participant.Identity == participantId {
+					r.RoomState[i].Participants[j].CanPublish = &canPublish
+				}
+			}
 		}
 	}
 }
