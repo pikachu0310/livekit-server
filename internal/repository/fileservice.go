@@ -3,13 +3,12 @@ package repository
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/pikachu0310/livekit-server/internal/pkg/config"
 	"log"
 	"mime"
 	"strings"
 	"time"
+
+	"github.com/pikachu0310/livekit-server/internal/pkg/config"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config" // ★別名インポート
@@ -23,9 +22,13 @@ type FileService struct {
 	cfg             *config.S3Config // ★ 自作のS3Config
 }
 
+var (
+	baseEndpoint = "https://s3.isk01.sakurastorage.jp"
+)
+
 // NewFileService は FileService を初期化
 func NewFileService(cfg *config.S3Config) *FileService {
-	s3Client := connectS3(cfg)
+	s3Client := connectS3()
 	return &FileService{
 		cfg:             cfg,
 		s3Client:        s3Client,
@@ -33,26 +36,17 @@ func NewFileService(cfg *config.S3Config) *FileService {
 	}
 }
 
-func connectS3(cfg *config.S3Config) *s3.Client {
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
-		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.AccessKeySecret, "")),
-		awsconfig.WithRegion("auto"),
-	)
+func connectS3() *s3.Client {
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
-	// KOKOMITE
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String(fmt.Sprintf("https://%s.r2.cloudflarestorage.com", "WAKANNNEEE"))
+	client := s3.NewFromConfig(cfg, func(options *s3.Options) {
+		options.BaseEndpoint = &baseEndpoint
+		options.Region = "jp-north-1"
 	})
-	// 以下のようにも書ける? wakaranai
-	/*
-		client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-			o.UsePathStyle = true
-			o.EndpointResolver = s3.EndpointResolverFromURL(cfg.S3Endpoint)
-		})
-	*/
+
 	return client
 }
 
