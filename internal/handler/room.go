@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -21,6 +22,114 @@ func (h *Handler) GetRooms(ctx echo.Context) error {
 		})
 	}
 	return ctx.JSON(http.StatusOK, roomWithParticipants)
+}
+
+// GetRoomMetadata GET /rooms/:room_id/metadata
+// ルームのメタデータを取得する。
+func (h *Handler) GetRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
+	apiKey := h.repo.ApiKey
+	apiSecret := h.repo.ApiSecret
+	apiHost := h.repo.LiveKitHost
+	if apiKey == "" || apiSecret == "" || apiHost == "" {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "API key, secret and host must be set in environment variables",
+		})
+	}
+
+	_, echoErr := util.AuthTraQClient(ctx)
+	if echoErr != nil {
+		return ctx.JSON(http.StatusUnauthorized, map[string]string{
+			"error on AuthTraQClient": echoErr.Error(),
+		})
+	}
+
+	for _, room := range h.repo.RoomState {
+		if room.RoomId.String() == roomID.String() {
+			return ctx.JSON(http.StatusOK, room.Metadata)
+		}
+	}
+
+	return ctx.JSON(http.StatusNotFound, map[string]string{
+		"error": "Room not found",
+	})
+}
+
+// PatchRoomMetadata PATCH /rooms/:room_id/metadata
+// ルームのメタデータを変更する。
+func (h *Handler) UpdateRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
+	// リクエストボディを取得
+	type roomMetadataRequest struct {
+		Metadata string `json:"metadata"`
+	}
+	var req roomMetadataRequest
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, map[string]string{
+			"error on Bind": err.Error(),
+		})
+	}
+
+	apiKey := h.repo.ApiKey
+	apiSecret := h.repo.ApiSecret
+	apiHost := h.repo.LiveKitHost
+	if apiKey == "" || apiSecret == "" || apiHost == "" {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "API key, secret and host must be set in environment variables",
+		})
+	}
+
+	c := lksdk.NewRoomServiceClient(apiHost, apiKey, apiSecret)
+
+	userID, echoErr := util.AuthTraQClient(ctx)
+	if echoErr != nil {
+		return ctx.JSON(http.StatusUnauthorized, map[string]string{
+			"error on AuthTraQClient": echoErr.Error(),
+		})
+	}
+
+	// ルームのメタデータを変更
+	for _, room := range h.repo.RoomState {
+		if room.RoomId.String() == roomID.String() {
+			// ルームに参加しているか確認
+			for _, participant := range room.Participants {
+				if *participant.Name == userID {
+					// ルームのメタデータを変更
+					room.Metadata = &req.Metadata
+					metadata := &util.Metadata{
+						Status:    req.Metadata,
+						IsWebinar: *room.IsWebinar,
+					}
+					metadataStr, err := json.Marshal(metadata)
+					if err != nil {
+						return ctx.JSON(http.StatusInternalServerError, map[string]string{
+							"error on Marshal": err.Error(),
+						})
+					}
+					_, err = c.UpdateRoomMetadata(ctx.Request().Context(), &livekit.UpdateRoomMetadataRequest{
+						Room:     roomID.String(),
+						Metadata: string(metadataStr),
+					})
+					if err != nil {
+						return ctx.JSON(http.StatusInternalServerError, map[string]string{
+							"error on UpdateRoom": err.Error(),
+						})
+					}
+
+					// 全体に通知
+					h.broadcastRoomState()
+
+					return ctx.JSON(http.StatusOK, map[string]string{})
+				}
+			}
+			return ctx.JSON(http.StatusForbidden, map[string]string{
+				"error": "You don't have permission to change room metadata",
+			})
+		}
+	}
+
+	return ctx.JSON(http.StatusNotFound, map[string]string{
+		"error": "Room not found",
+	})
+
 }
 
 // PatchRoomParticipants PATCH /rooms/:room_id/participants

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pikachu0310/livekit-server/openapi/models"
 )
 
@@ -90,11 +93,33 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 
 	// 8) ルーム状態を更新
 	if !isExistingRoom {
+		metadata := util.Metadata{
+			Status:    "",
+			IsWebinar: isWebinar,
+		}
+		metadataStr, err := json.Marshal(metadata)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to marshal metadata",
+			})
+		}
+		lkclient := lksdk.NewRoomServiceClient(h.repo.LiveKitHost, h.repo.ApiKey, h.repo.ApiSecret)
+		_, err = lkclient.CreateRoom(c.Request().Context(), &livekit.CreateRoomRequest{
+			Name:     room,
+			Metadata: string(metadataStr),
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{
+				"error": "Failed to create room",
+			})
+		}
 		// ルームが存在しない場合は新規作成
+		emptyMetadata := ""
 		roomWithParticipants := models.RoomWithParticipants{
+			IsWebinar:    &isWebinar,
+			Metadata:     &emptyMetadata,
 			RoomId:       uuid.MustParse(room),
 			Participants: []models.Participant{},
-			IsWebinar:    util.BoolPtr(isWebinar),
 		}
 		h.repo.AddRoomState(roomWithParticipants)
 	}

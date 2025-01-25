@@ -26,6 +26,15 @@ func BoolPtr(b bool) *bool {
 	return &b
 }
 
+// Metadataに収容されるJSONの構造体
+type Metadata struct {
+	// ルームのメタデータ
+	Status string `json:"status"`
+
+	// webinarかどうか
+	IsWebinar bool `json:"isWebinar"`
+}
+
 func AuthTraQClient(c echo.Context) (string, *echo.HTTPError) {
 	authHeader := c.Request().Header.Get("Authorization")
 	if authHeader == "" {

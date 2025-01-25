@@ -30,7 +30,10 @@ type Participant struct {
 // RoomWithParticipants defines model for RoomWithParticipants.
 type RoomWithParticipants struct {
 	// IsWebinar ウェビナールームかどうか
-	IsWebinar    *bool         `json:"isWebinar,omitempty"`
+	IsWebinar *bool `json:"isWebinar,omitempty"`
+
+	// Metadata ルームに関連付けられたカスタム属性
+	Metadata     *string       `json:"metadata,omitempty"`
 	Participants []Participant `json:"participants"`
 
 	// RoomId ルームのID
