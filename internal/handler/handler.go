@@ -10,13 +10,13 @@ type Handler struct {
 	repo        *repository.Repository
 	Clients     map[*websocket.Conn]bool
 	Mutex       sync.Mutex
-	fileService *FileService
+	FileService *repository.FileService
 }
 
-func New(repo *repository.Repository) *Handler {
+func New(repo *repository.Repository, f *repository.FileService) *Handler {
 	return &Handler{
 		repo:        repo,
 		Clients:     make(map[*websocket.Conn]bool),
-		fileService: NewFileService(),
+		FileService: f,
 	}
 }
