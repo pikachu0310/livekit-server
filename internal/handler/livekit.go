@@ -51,6 +51,18 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 		}
 	}
 
+	if isExistingRoom {
+		// ルームが存在して、webinar=true の場合はCanPublish=false
+		for _, roomState := range h.repo.RoomState {
+			if roomState.RoomId.String() == room {
+				if roomState.IsWebinar != nil && *roomState.IsWebinar {
+					isWebinar = true
+				}
+				break
+			}
+		}
+	}
+
 	// 7) VideoGrant にルーム名、CanPublishData=true を設定
 	// ルームが存在しない場合はCanPublish=true
 	// ルームが存在して、webinar=true の場合はCanPublish=false
