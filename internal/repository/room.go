@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
+	"github.com/pikachu0310/livekit-server/internal/pkg/util"
 	"github.com/pikachu0310/livekit-server/openapi/models"
 )
 
@@ -151,7 +153,17 @@ func (r *Repository) GetRoomsWithParticipantsByLiveKitServer(ctx context.Context
 		if err != nil {
 			return nil, err
 		}
+
+		var metadata *util.Metadata
+		// rm.MetadataをJSON文字列としてunmarshalする
+		err = json.Unmarshal([]byte(rm.Metadata), &metadata)
+		if err != nil {
+			return nil, err
+		}
+
 		roomWithParticipants = append(roomWithParticipants, models.RoomWithParticipants{
+			Metadata:     &metadata.Metadata,
+			IsWebinar:    &metadata.IsWebinar,
 			RoomId:       roomId,
 			Participants: Participants,
 		})

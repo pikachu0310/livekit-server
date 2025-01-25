@@ -96,6 +96,74 @@ paths:
           description: Not Found
         '500':
           description: Internal Server Error
+
+  /rooms/{roomId}/metadata:
+    get:
+      summary: ルームのメタデータを取得
+      description: >
+        ルームのメタデータを取得します。
+      operationId: getRoomMetadata
+      tags:
+        - livekit
+      parameters:
+        - in: path
+          name: roomId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ルームのUUID
+      responses:
+        '200':
+          description: 成功 - ルームのメタデータを取得
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: string
+                    description: ルームに関連付けられたカスタム属性
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+    patch:
+      summary: ルームのメタデータを更新
+      description: >
+        ルームのメタデータを更新します。
+      operationId: updateRoomMetadata
+      tags:
+        - livekit
+      parameters:
+        - in: path
+          name: roomId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ルームのUUID
+        - in: body
+          name: body
+          description: ルームのメタデータ
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: string
+                    description: ルームに関連付けられたカスタム属性
+      responses:
+        '200':
+          description: 成功 - ルームのメタデータを更新
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
           
   /rooms/{roomId}/participants:
     patch:
@@ -216,6 +284,9 @@ components:
         isWebinar:
           type: boolean
           description: ウェビナールームかどうか
+        metadata:
+          type: string
+          description: ルームに関連付けられたカスタム属性
       required:
         - roomId
         - participants
