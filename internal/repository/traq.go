@@ -12,13 +12,13 @@ var (
 
 func (r *Repository) SendJoinMessageToTraQ(channelId string, userName string) {
 	path := r.GetChannelFullPath(channelId)
-	content := fmt.Sprintf(":@%s:%s さんが #%s に参加しました", userName, userName, path)
+	content := fmt.Sprintf(":@%s: %s さんが #%s に参加しました", userName, userName, path)
 	bot.SendMessageToNotificationChannel(content)
 }
 
 func (r *Repository) SendLeaveMessageToTraQ(channelId string, userName string) {
 	path := r.GetChannelFullPath(channelId)
-	content := fmt.Sprintf(":@%s:%s さんが #%s から退出しました", userName, userName, path)
+	content := fmt.Sprintf(":@%s: %s さんが #%s から退出しました", userName, userName, path)
 	bot.SendMessageToNotificationChannel(content)
 }
 
@@ -36,7 +36,7 @@ func (r *Repository) SendEndRoomMessageToTraQ(channelId string) {
 
 func (r *Repository) SendStartScreenShareMessageToTraQ(channelId string, userName string) {
 	path := r.GetChannelFullPath(channelId)
-	content := fmt.Sprintf(":@%s:%s さんが #%s で画面共有を開始しました", userName, userName, path)
+	content := fmt.Sprintf(":@%s: %s さんが #%s で画面共有を開始しました", userName, userName, path)
 	bot.SendMessageToNotificationChannel(content)
 }
 

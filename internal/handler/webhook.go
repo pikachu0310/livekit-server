@@ -37,13 +37,13 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 		fmt.Printf("Room finished: room=%s", event.Room.Name)
 		h.repo.RemoveRoomState(event.Room.Name)
 		h.repo.SendEndRoomMessageToTraQ(event.Room.Name)
-	case webhook.EventTrackPublished:
-		fmt.Printf("Track published: room=%s, participant=%s, track=%s", event.Room.Name, event.Participant.Identity, event.Track.Sid)
-		if h.repo.CheckUserExistenceByName(event.Participant.Name) {
-			if len(event.Participant.Attributes) >= 1 {
-				h.repo.SendStartScreenShareMessageToTraQ(event.Room.Name, event.Participant.Name)
-			}
-		}
+	//case webhook.EventTrackPublished:
+	//	fmt.Printf("Track published: room=%s, participant=%s, track=%s", event.Room.Name, event.Participant.Identity, event.Track.Sid)
+	//	if h.repo.CheckUserExistenceByName(event.Participant.Name) {
+	//		if len(event.Participant.Attributes) >= 1 {
+	//			h.repo.SendStartScreenShareMessageToTraQ(event.Room.Name, event.Participant.Name)
+	//		}
+	//	}
 	default:
 		fmt.Printf("Unhandled webhook event: %s", event.Event)
 	}
