@@ -14,12 +14,12 @@ type Repository struct {
 	RoomState   []models.RoomWithParticipants
 }
 
-func New(db *sqlx.DB, cfg *config.LivekitConfig) *Repository {
+func New(db *sqlx.DB, liveKitCfg *config.LivekitConfig) *Repository {
 	return &Repository{
 		db:          db,
-		LiveKitHost: cfg.LiveKitHost,
-		ApiKey:      cfg.ApiKey,
-		ApiSecret:   cfg.ApiSecret,
+		LiveKitHost: liveKitCfg.LiveKitHost,
+		ApiKey:      liveKitCfg.ApiKey,
+		ApiSecret:   liveKitCfg.ApiSecret,
 		RoomState:   make([]models.RoomWithParticipants, 0),
 	}
 }

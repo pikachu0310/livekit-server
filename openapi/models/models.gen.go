@@ -40,6 +40,66 @@ type RoomWithParticipants struct {
 	RoomId openapi_types.UUID `json:"roomId"`
 }
 
+// RoomsListResponse defines model for RoomsListResponse.
+type RoomsListResponse = []RoomWithParticipants
+
+// SoundboardItem defines model for SoundboardItem.
+type SoundboardItem struct {
+	// SoundId サーバが発行したサウンドID
+	SoundId string `json:"soundId"`
+
+	// SoundName ユーザが指定した表示用のサウンド名
+	SoundName string `json:"soundName"`
+
+	// StampId 任意のスタンプID等、サウンドに紐づく拡張情報
+	StampId string `json:"stampId"`
+}
+
+// SoundboardListResponse defines model for SoundboardListResponse.
+type SoundboardListResponse = []SoundboardItem
+
+// SoundboardPlayRequest defines model for SoundboardPlayRequest.
+type SoundboardPlayRequest struct {
+	// RoomName 再生させたいルームのUUID
+	RoomName openapi_types.UUID `json:"roomName"`
+
+	// SoundId サウンドID (DB登録済み)
+	SoundId string `json:"soundId"`
+}
+
+// SoundboardPlayResponse defines model for SoundboardPlayResponse.
+type SoundboardPlayResponse struct {
+	// IngressId 作成された Ingress のID
+	IngressId string `json:"ingressId"`
+
+	// StreamKey RTMP配信の場合のstream key
+	StreamKey *string `json:"streamKey,omitempty"`
+
+	// Url 作成された Ingress のストリームURL等
+	Url *string `json:"url,omitempty"`
+}
+
+// SoundboardUploadRequest defines model for SoundboardUploadRequest.
+type SoundboardUploadRequest struct {
+	// Audio アップロードする音声ファイル(15秒以内)
+	Audio openapi_types.File `json:"audio"`
+
+	// SoundName ユーザが自由につけるサウンド名
+	SoundName string `json:"soundName"`
+}
+
+// SoundboardUploadResponse defines model for SoundboardUploadResponse.
+type SoundboardUploadResponse struct {
+	// SoundId 登録されたサウンドID (ファイル名)
+	SoundId string `json:"soundId"`
+}
+
+// TokenResponse defines model for TokenResponse.
+type TokenResponse struct {
+	// Token LiveKit用のJWTトークン
+	Token string `json:"token"`
+}
+
 // GetLiveKitTokenParams defines parameters for GetLiveKitToken.
 type GetLiveKitTokenParams struct {
 	// Room 参加するルームのUUID
@@ -51,6 +111,12 @@ type GetLiveKitTokenParams struct {
 
 // LiveKitWebhookApplicationWebhookPlusJSONBody defines parameters for LiveKitWebhook.
 type LiveKitWebhookApplicationWebhookPlusJSONBody = map[string]interface{}
+
+// PostSoundboardMultipartRequestBody defines body for PostSoundboard for multipart/form-data ContentType.
+type PostSoundboardMultipartRequestBody = SoundboardUploadRequest
+
+// PostSoundboardPlayJSONRequestBody defines body for PostSoundboardPlay for application/json ContentType.
+type PostSoundboardPlayJSONRequestBody = SoundboardPlayRequest
 
 // LiveKitWebhookApplicationWebhookPlusJSONRequestBody defines body for LiveKitWebhook for application/webhook+json ContentType.
 type LiveKitWebhookApplicationWebhookPlusJSONRequestBody = LiveKitWebhookApplicationWebhookPlusJSONBody

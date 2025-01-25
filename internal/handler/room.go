@@ -1,27 +1,29 @@
 package handler
 
 import (
+	"github.com/labstack/echo/v4"
+	"github.com/pikachu0310/livekit-server/openapi/models"
 	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"github.com/livekit/protocol/livekit"
 	lksdk "github.com/livekit/server-sdk-go/v2"
 	"github.com/pikachu0310/livekit-server/internal/pkg/util"
-	"github.com/pikachu0310/livekit-server/openapi/models"
 )
 
 // GetRooms GET /rooms
 // 全ルームを取得し、それぞれの参加者一覧をまとめて返す。
 func (h *Handler) GetRooms(ctx echo.Context) error {
-	roomWithParticipants, err := h.repo.GetRoomsWithParticipantsByLiveKitServer(ctx.Request().Context())
+	var res models.RoomsListResponse
+	res, err := h.repo.GetRoomsWithParticipantsByLiveKitServer(ctx.Request().Context())
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, map[string]string{
 			"error on GetRoomsWithParticipantsByLiveKitServer": err.Error(),
 		})
 	}
-	return ctx.JSON(http.StatusOK, roomWithParticipants)
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetRoomMetadata GET /rooms/:room_id/metadata
