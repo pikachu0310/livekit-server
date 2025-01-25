@@ -100,7 +100,7 @@ func (h *Handler) GetLiveKitToken(c echo.Context, _ models.GetLiveKitTokenParams
 	}
 
 	// 9) 最終的にトークンをJSONで返す
-	return c.JSON(http.StatusOK, map[string]string{
-		"token": livekitToken,
+	return c.JSON(http.StatusOK, models.TokenResponse{
+		Token: livekitToken,
 	})
 }

@@ -42,5 +42,5 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 	// 全ルームの状態をWebSocketでブロードキャスト
 	h.broadcastRoomState()
 
-	return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	return c.NoContent(http.StatusOK)
 }
