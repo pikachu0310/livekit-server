@@ -39,8 +39,10 @@ func (h *Handler) LiveKitWebhook(c echo.Context) error {
 		h.repo.SendEndRoomMessageToTraQ(event.Room.Name)
 	case webhook.EventTrackPublished:
 		fmt.Printf("Track published: room=%s, participant=%s, track=%s", event.Room.Name, event.Participant.Identity, event.Track.Sid)
-		h.repo.SendStartScreenShareMessageToTraQ(event.Room.Name, event.Participant.Name)
-		
+		if len(event.Participant.Attributes) >= 1 {
+			h.repo.SendStartScreenShareMessageToTraQ(event.Room.Name, event.Participant.Name)
+		}
+
 	default:
 		fmt.Printf("Unhandled webhook event: %s", event.Event)
 	}

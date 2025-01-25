@@ -36,18 +36,19 @@ func setChannelID() {
 }
 
 func SendMessageToNotificationChannel(content string) {
-	_, err := SendMessage(notificationChannelId, content)
+	_, err := SendMessage(notificationChannelId, content, true)
 	if err != nil {
 		fmt.Println("Failed to send message to notification channel: " + err.Error())
 	}
 }
 
-func SendMessage(channelID string, content string) (*traq.Message, error) {
+func SendMessage(channelID, content string, embed bool) (*traq.Message, error) {
 	message, _, err := bot.API().
 		MessageApi.
 		PostMessage(context.Background(), channelID).
 		PostMessageRequest(traq.PostMessageRequest{
 			Content: content,
+			Embed:   &embed,
 		}).
 		Execute()
 	return message, err
