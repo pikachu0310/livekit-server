@@ -40,6 +40,16 @@ func (h *Handler) PostSoundboard(c echo.Context) error {
 		})
 	}
 	stampId := c.FormValue("stampId")
+	if stampId == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "stampId is required (multipart form field: 'stampId')",
+		})
+	}
+	if !h.repo.CheckStampExistence(stampId) {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "stampId is invalid",
+		})
+	}
 
 	// 2) ファイルを読み込み
 	src, err := file.Open()

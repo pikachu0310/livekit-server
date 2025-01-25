@@ -90,6 +90,18 @@ func GetChannelPath(channelID string) (string, error) {
 	return path.Path, err
 }
 
+func GetStamp(stampID string) (*traq.Stamp, error) {
+	stamp, _, err := bot.API().
+		StampApi.
+		GetStamp(context.Background(), stampID).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	return stamp, err
+}
+
 /*
 func main() {
 	bot.OnMessageCreated(func(p *payload.MessageCreated) {

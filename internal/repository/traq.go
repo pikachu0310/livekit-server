@@ -77,3 +77,15 @@ func (r *Repository) GetChannelFullPath(channelId string) string {
 
 	return path
 }
+
+func (r *Repository) CheckStampExistence(stampId string) bool {
+	_, ok := traQChannels[stampId]
+	if !ok {
+		err := r.GetTraQChannelsAndSet()
+		if err != nil {
+			return false
+		}
+		_, ok = traQChannels[stampId]
+	}
+	return ok
+}
