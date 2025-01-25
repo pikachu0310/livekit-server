@@ -1,10 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"os"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 func getEnv(key, defaultValue string) string {
@@ -12,73 +9,4 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-type LivekitConfig struct {
-	LiveKitHost string
-	ApiKey      string
-	ApiSecret   string
-}
-
-type S3Config struct {
-	BucketName      string
-	AccountID       string
-	AccessKeyID     string
-	AccessKeySecret string
-	S3Endpoint      string
-}
-
-func LoadLivekitConfig() *LivekitConfig {
-	return &LivekitConfig{
-		LiveKitHost: os.Getenv("LIVEKIT_HOST"),
-		ApiKey:      os.Getenv("LIVEKIT_API_KEY"),
-		ApiSecret:   os.Getenv("LIVEKIT_API_SECRET"),
-	}
-}
-
-// NewS3Config は環境変数等から設定を組み立てて返す
-func NewS3Config() *S3Config {
-	return &S3Config{
-		BucketName:      getEnv("AWS_BUCKET_NAME", "sdk-example"),
-		AccountID:       getEnv("AWS_ACCOUNT_ID", ""),
-		AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
-		AccessKeySecret: getEnv("AWS_ACCESS_KEY_SECRET", ""),
-		S3Endpoint:      getEnv("AWS_ENDPOINT", "http://localhost:9000"),
-	}
-}
-
-func AppAddr() string {
-	return getEnv("APP_ADDR", ":8080")
-}
-
-func MySQL() *mysql.Config {
-	c := mysql.NewConfig()
-
-	_, isDeployedOnNeoShowcase := os.LookupEnv("NS_MARIADB_PORT")
-	if isDeployedOnNeoShowcase {
-		c.User = getEnv("NS_MARIADB_USER", "root")
-		c.Passwd = getEnv("NS_MARIADB_PASSWORD", "pass")
-		c.Net = getEnv("DB_NET", "tcp")
-		c.Addr = fmt.Sprintf(
-			"%s:%s",
-			getEnv("NS_MARIADB_HOSTNAME", "localhost"),
-			getEnv("NS_MARIADB_PORT", "3306"),
-		)
-		c.DBName = getEnv("NS_MARIADB_DATABASE", "app")
-	} else {
-		c.User = getEnv("DB_USER", "root")
-		c.Passwd = getEnv("DB_PASSWORD", "pass")
-		c.Net = getEnv("DB_NET", "tcp")
-		c.Addr = fmt.Sprintf(
-			"%s:%s",
-			getEnv("DB_HOST", "localhost"),
-			getEnv("DB_PORT", "3306"),
-		)
-		c.DBName = getEnv("DB_NAME", "app")
-	}
-	c.Collation = "utf8mb4_general_ci"
-	c.AllowNativePasswords = true
-	c.ParseTime = true
-
-	return c
 }
