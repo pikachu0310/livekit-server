@@ -56,7 +56,7 @@ func (h *Handler) GetRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 
 // PatchRoomMetadata PATCH /rooms/:room_id/metadata
 // ルームのメタデータを変更する。
-func (h *Handler) ChangeRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
+func (h *Handler) UpdateRoomMetadata(ctx echo.Context, roomID uuid.UUID) error {
 	// リクエストボディを取得
 	type roomMetadataRequest struct {
 		Metadata string `json:"metadata"`
