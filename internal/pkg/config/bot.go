@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	traqwsbot "github.com/traPtitech/traq-ws-bot"
 )
 
@@ -10,7 +11,7 @@ func NewTraQBot() *traqwsbot.Bot {
 		Origin:      getEnv("TRAQ_ORIGIN", "wss://q.trap.jp"),
 	})
 	if err != nil {
-		panic(err)
+		fmt.Println("Failed to create new bot: " + err.Error())
 	}
 	return newBot
 }

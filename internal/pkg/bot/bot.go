@@ -26,7 +26,7 @@ func setNewTraQBot() {
 func startBotOnBackground() {
 	go func() {
 		if err := bot.Start(); err != nil {
-			panic(err)
+			fmt.Println("Failed to start bot: " + err.Error())
 		}
 	}()
 }
